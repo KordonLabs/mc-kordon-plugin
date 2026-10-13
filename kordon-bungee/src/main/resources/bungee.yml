@@ -1,0 +1,6 @@
+name: Kordon
+main: com.kordonlabs.plugin.bungee.KordonBungeePlugin
+version: ${version}
+author: Kordon Labs
+description: Protection from VPNs and proxies, access lists, online players and login statistics
+softDepends: [floodgate]

@@ -1,0 +1,13 @@
+# Gradle
+.gradle/
+build/
+
+# Jars (the Gradle wrapper is the only committed one)
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+out/

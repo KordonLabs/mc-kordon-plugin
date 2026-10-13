@@ -1,0 +1,19 @@
+[versions]
+bungeecord = "1.21-R0.4"
+gson = "2.14.0"
+shadow = "9.6.1"
+velocity = "3.5.1"
+
+[libraries]
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+bungeecord-api = { module = "net.md-5:bungeecord-api", version.ref = "bungeecord" }
+bungeecord-chat = { module = "net.md-5:bungeecord-chat", version.ref = "bungeecord" }
+bungeecord-config = { module = "net.md-5:bungeecord-config", version.ref = "bungeecord" }
+bungeecord-event = { module = "net.md-5:bungeecord-event", version.ref = "bungeecord" }
+bungeecord-protocol = { module = "net.md-5:bungeecord-protocol", version.ref = "bungeecord" }
+bungeecord-serializer = { module = "net.md-5:bungeecord-serializer", version.ref = "bungeecord" }
+bungeecord-dialog = { module = "net.md-5:bungeecord-dialog", version.ref = "bungeecord" }
+velocity-api = { module = "com.velocitypowered:velocity-api", version.ref = "velocity" }
+
+[plugins]
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }

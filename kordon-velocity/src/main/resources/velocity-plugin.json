@@ -1,0 +1,9 @@
+{
+  "id": "kordon",
+  "name": "Kordon",
+  "version": "${version}",
+  "description": "Protection from VPNs and proxies, access lists, online players and login statistics",
+  "authors": ["Kordon Labs"],
+  "dependencies": [{ "id": "floodgate", "optional": true }],
+  "main": "com.kordonlabs.plugin.velocity.KordonVelocityPlugin"
+}
