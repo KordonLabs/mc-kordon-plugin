@@ -1,5 +1,6 @@
 package com.kordonlabs.plugin.common.session;
 
+import com.kordonlabs.plugin.common.api.dto.ClientSettings;
 import com.kordonlabs.plugin.common.api.dto.SyncEvent;
 import com.kordonlabs.plugin.common.platform.OnlinePlayer;
 import com.kordonlabs.plugin.common.platform.Platform;
@@ -97,6 +98,7 @@ public final class SessionTracker {
         s.backend = cleanBackend(p.backend());
         s.brand = cleanBrand(p.clientBrand());
         s.locale = cleanLocale(p.locale());
+        s.settings = readSettings(p);
         synchronized (lock) {
             TrackedSession tracked = byKey.get(key);
             if (tracked != null) {
@@ -505,13 +507,16 @@ public final class SessionTracker {
         if (brand != null) s.brand = brand;
         if (fresh.locale != null) s.locale = fresh.locale;
         if (s.backend == null && fresh.backend != null) s.backend = fresh.backend;
+        if (fresh.settings != null) s.settings = fresh.settings;
+        boolean settingsChanged = s.settings != null && !s.settings.equals(s.sentSettings);
         boolean changed = differs(s.brand, s.sentBrand) || differs(s.locale, s.sentLocale)
-                || differs(s.backend, s.sentBackend);
+                || differs(s.backend, s.sentBackend) || settingsChanged;
         if (!changed) return false;
         s.sentBrand = s.brand;
         s.sentLocale = s.locale;
         s.sentBackend = s.backend;
-        queue.offer(new SessionEvent.Info(s.sid, now, s.brand, s.locale, s.backend));
+        s.sentSettings = s.settings;
+        queue.offer(new SessionEvent.Info(s.sid, now, s.brand, s.locale, s.backend, settingsChanged ? s.settings : null));
         return true;
     }
 
@@ -550,13 +555,35 @@ public final class SessionTracker {
     }
 
     /** The wrapper's current client details, read outside the lock because it calls proxy code. */
-    private record ClientInfo(String brand, String locale, String backend) {
+    static ClientSettings readSettings(OnlinePlayer p) {
+        try {
+            ClientSettings settings = p.clientSettings();
+            if (settings == null) return null;
+            return new ClientSettings(settings.viewDistance(), cleanToken(settings.chatMode()), settings.chatColors(),
+                    cleanToken(settings.mainHand()), settings.skinParts(), settings.listing(), settings.filtering(),
+                    cleanToken(settings.particles()));
+        } catch (RuntimeException | LinkageError e) {
+            return null;
+        }
+    }
+
+    static String cleanToken(String token) {
+        if (token == null || token.isEmpty() || token.length() > 16) return null;
+        for (int i = 0; i < token.length(); i++) {
+            char c = token.charAt(i);
+            if (!(c >= 'a' && c <= 'z') && c != '_') return null;
+        }
+        return token;
+    }
+
+    private record ClientInfo(String brand, String locale, String backend, ClientSettings settings) {
 
         static ClientInfo read(OnlinePlayer p) {
             try {
-                return new ClientInfo(cleanBrand(p.clientBrand()), cleanLocale(p.locale()), cleanBackend(p.backend()));
+                return new ClientInfo(cleanBrand(p.clientBrand()), cleanLocale(p.locale()), cleanBackend(p.backend()),
+                        readSettings(p));
             } catch (RuntimeException e) {
-                return new ClientInfo(null, null, null);
+                return new ClientInfo(null, null, null, null);
             }
         }
     }

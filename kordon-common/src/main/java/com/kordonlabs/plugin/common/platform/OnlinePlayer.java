@@ -1,5 +1,6 @@
 package com.kordonlabs.plugin.common.platform;
 
+import com.kordonlabs.plugin.common.api.dto.ClientSettings;
 import java.util.UUID;
 
 /**
@@ -29,6 +30,11 @@ public interface OnlinePlayer {
 
     /** A Floodgate (Bedrock) player. */
     boolean bedrock();
+
+    /** The client's settings; null until the client sent them. */
+    default ClientSettings clientSettings() {
+        return null;
+    }
 
     /**
      * Identity of the connection: the same object as {@code LoginAttempt.connectionKey} (Bungee: the

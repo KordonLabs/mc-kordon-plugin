@@ -1,5 +1,6 @@
 package com.kordonlabs.plugin.common.session;
 
+import com.kordonlabs.plugin.common.api.dto.ClientSettings;
 import com.kordonlabs.plugin.common.platform.OnlinePlayer;
 import com.kordonlabs.plugin.common.util.Scheduler;
 import java.util.UUID;
@@ -29,6 +30,7 @@ public final class TrackedSession {
     String backend;
     String brand;
     String locale;
+    ClientSettings settings;
     /** A brand learnt outside the wrapper: from the platform's brand listener, or "Geyser" for Bedrock players. */
     String brandHint;
 
@@ -36,6 +38,7 @@ public final class TrackedSession {
     String sentBackend;
     String sentBrand;
     String sentLocale;
+    ClientSettings sentSettings;
 
     /** {@code Clock.nanos()} of the last Kordon kick of this connection; 0 when never kicked. */
     long kickedAtNanos;
@@ -76,7 +79,9 @@ public final class TrackedSession {
         sentBackend = backend;
         sentBrand = brand;
         sentLocale = locale;
-        return new SessionEvent.Join(sid, atNanos, uuid, name, ip, loginId, protocol, backend, bedrock, brand, locale);
+        sentSettings = settings;
+        return new SessionEvent.Join(sid, atNanos, uuid, name, ip, loginId, protocol, backend, bedrock, brand, locale,
+                settings);
     }
 
     void cancelTimers() {

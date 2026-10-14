@@ -14,6 +14,7 @@ import com.kordonlabs.plugin.common.text.LocalizedLine;
 import com.kordonlabs.plugin.common.util.SystemClock;
 import com.kordonlabs.plugin.common.util.ThrottledLog;
 import com.kordonlabs.plugin.velocity.api.KordonLoginCheckedEvent;
+import com.kordonlabs.plugin.velocity.compat.VelocityChannels;
 import com.kordonlabs.plugin.velocity.api.KordonRemoteKickEvent;
 import com.kordonlabs.plugin.velocity.text.VelocityText;
 import java.nio.file.Path;
@@ -127,7 +128,8 @@ public final class VelocityPlatform implements Platform {
 
     /** Wraps {@code player}; null for null or for a connection without an IP address. */
     public VelocityOnlinePlayer wrap(Player player) {
-        return player == null ? null : VelocityOnlinePlayer.of(player, floodgate);
+        if (player == null || VelocityChannels.isFake(player)) return null;
+        return VelocityOnlinePlayer.of(player, floodgate);
     }
 
     @Override

@@ -16,6 +16,7 @@ import com.kordonlabs.plugin.common.text.MessageKey;
 import com.kordonlabs.plugin.common.text.Messages;
 import com.kordonlabs.plugin.common.util.ThrottledLog;
 import com.kordonlabs.plugin.velocity.VelocitySkins;
+import com.kordonlabs.plugin.velocity.compat.VelocityChannels;
 import com.kordonlabs.plugin.velocity.text.VelocityText;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -75,6 +76,7 @@ public final class LoginListener {
         HeldLogin.Gate gate = core.gate();
         if (gate == null) return null; // not started, not configured or stopping
         Player player = event.getPlayer();
+        if (VelocityChannels.isFake(player)) return null;
         String ip = PlayerFacts.ipOf(player.getRemoteAddress());
         if (ip == null) {
             if (notInetLogged.compareAndSet(false, true)) {

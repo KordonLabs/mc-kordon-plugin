@@ -4,11 +4,13 @@ import com.kordonlabs.plugin.bungee.compat.BrandCache;
 import com.kordonlabs.plugin.bungee.compat.BrandDecoder;
 import com.kordonlabs.plugin.bungee.compat.Reflect;
 import com.kordonlabs.plugin.bungee.text.BungeeText;
+import com.kordonlabs.plugin.common.api.dto.ClientSettings;
 import com.kordonlabs.plugin.common.compat.FloodgateHook;
 import com.kordonlabs.plugin.common.platform.OnlinePlayer;
 import com.kordonlabs.plugin.common.platform.PlayerFacts;
 import java.lang.invoke.MethodHandle;
 import java.util.UUID;
+import net.md_5.bungee.api.SkinConfiguration;
 import net.md_5.bungee.api.connection.PendingConnection;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.connection.Server;
@@ -92,6 +94,18 @@ public final class BungeeOnlinePlayer implements OnlinePlayer {
     @Override
     public String locale() {
         return PlayerFacts.localeTag(player.getLocale());
+    }
+
+    /** BungeeCord returns defaults until the settings packet arrives; the locale stays null until then. */
+    @Override
+    public ClientSettings clientSettings() {
+        if (player.getLocale() == null) return null;
+        SkinConfiguration skin = player.getSkinParts();
+        return new ClientSettings((int) player.getViewDistance(), ClientSettings.token(player.getChatMode()),
+                player.hasChatColors(), ClientSettings.token(player.getMainHand()),
+                skin == null ? null : ClientSettings.skinMask(skin.hasCape(), skin.hasJacket(), skin.hasLeftSleeve(),
+                        skin.hasRightSleeve(), skin.hasLeftPants(), skin.hasRightPants(), skin.hasHat()),
+                null, null, null);
     }
 
     @Override

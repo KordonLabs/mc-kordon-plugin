@@ -3,6 +3,7 @@ package com.kordonlabs.plugin.bungee;
 import com.kordonlabs.plugin.bungee.api.KordonLoginCheckedEvent;
 import com.kordonlabs.plugin.bungee.api.KordonRemoteKickEvent;
 import com.kordonlabs.plugin.bungee.compat.BrandCache;
+import com.kordonlabs.plugin.bungee.compat.BungeeChannels;
 import com.kordonlabs.plugin.bungee.text.BungeeText;
 import com.kordonlabs.plugin.common.compat.FloodgateHook;
 import com.kordonlabs.plugin.common.login.LoginVerdict;
@@ -98,7 +99,8 @@ public final class BungeePlatform implements Platform {
 
     /** Wraps {@code player}; null for null or a non-TCP connection (not tracked). */
     public BungeeOnlinePlayer wrap(ProxiedPlayer player) {
-        return player == null ? null : BungeeOnlinePlayer.of(player, brands, floodgate);
+        if (player == null || BungeeChannels.isFake(player)) return null;
+        return BungeeOnlinePlayer.of(player, brands, floodgate);
     }
 
     @Override

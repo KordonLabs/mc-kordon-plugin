@@ -2,6 +2,9 @@ package com.kordonlabs.plugin.velocity;
 
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ServerConnection;
+import com.velocitypowered.api.proxy.player.PlayerSettings;
+import com.velocitypowered.api.proxy.player.SkinParts;
+import com.kordonlabs.plugin.common.api.dto.ClientSettings;
 import com.kordonlabs.plugin.common.compat.FloodgateHook;
 import com.kordonlabs.plugin.common.platform.OnlinePlayer;
 import com.kordonlabs.plugin.common.platform.PlayerFacts;
@@ -78,6 +81,18 @@ public final class VelocityOnlinePlayer implements OnlinePlayer {
 
     static String localeOf(Player player) {
         return player.hasSentPlayerSettings() ? PlayerFacts.localeTag(player.getPlayerSettings().getLocale()) : null;
+    }
+
+    @Override
+    public ClientSettings clientSettings() {
+        if (!player.hasSentPlayerSettings()) return null;
+        PlayerSettings s = player.getPlayerSettings();
+        SkinParts skin = s.getSkinParts();
+        return new ClientSettings((int) s.getViewDistance(), ClientSettings.token(s.getChatMode()), s.hasChatColors(),
+                ClientSettings.token(s.getMainHand()),
+                skin == null ? null : ClientSettings.skinMask(skin.hasCape(), skin.hasJacket(), skin.hasLeftSleeve(),
+                        skin.hasRightSleeve(), skin.hasLeftPants(), skin.hasRightPants(), skin.hasHat()),
+                s.isClientListingAllowed(), s.isTextFilteringEnabled(), ClientSettings.token(s.getParticleStatus()));
     }
 
     @Override

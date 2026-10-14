@@ -35,13 +35,26 @@ public sealed interface SyncEvent permits SyncEvent.Join, SyncEvent.Info, SyncEv
      * @param loginId the {@code /login} answer's {@code loginId} of this connection; null after fail-open or reload
      * @param backend current backend server name; nullable
      * @param bedrock Floodgate player
+     * @param settings the client's settings; null until the client sent them
      */
     record Join(String sid, long ago, String uuid, String name, String ip, Long loginId, Integer protocol,
-                String backend, boolean bedrock, String brand, String locale) implements SyncEvent {
+                String backend, boolean bedrock, String brand, String locale, ClientSettings settings) implements SyncEvent {
+
+        public Join(String sid, long ago, String uuid, String name, String ip, Long loginId, Integer protocol,
+                    String backend, boolean bedrock, String brand, String locale) {
+            this(sid, ago, uuid, name, ip, loginId, protocol, backend, bedrock, brand, locale, null);
+        }
     }
 
-    /** Changed client details of an open session; null fields are unchanged. {@code locale} is BCP 47 ("ru-RU"). */
-    record Info(String sid, long ago, String brand, String locale, String backend) implements SyncEvent {
+    /**
+     * Changed client details of an open session; null fields are unchanged. {@code locale} is BCP 47 ("ru-RU").
+     * {@code settings} is sent whole, only when it changed.
+     */
+    record Info(String sid, long ago, String brand, String locale, String backend, ClientSettings settings) implements SyncEvent {
+
+        public Info(String sid, long ago, String brand, String locale, String backend) {
+            this(sid, ago, brand, locale, backend, null);
+        }
     }
 
     /**
