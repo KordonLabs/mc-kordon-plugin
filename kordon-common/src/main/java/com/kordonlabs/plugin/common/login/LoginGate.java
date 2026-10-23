@@ -254,7 +254,7 @@ public final class LoginGate {
     private static LoginRequest request(LoginAttempt a) {
         LoginRequest.Skin skin = a.skin() == null ? null : new LoginRequest.Skin(a.skin().texture(), a.skin().model());
         return new LoginRequest(a.name(), a.ip(), a.uuid() == null ? null : a.uuid().toString(),
-                a.protocol() > 0 ? a.protocol() : null, skin, a.host());
+                a.protocol() > 0 ? a.protocol() : null, skin, a.host(), a.bedrock() ? Boolean.TRUE : null);
     }
 
     private static LoginVerdict allow(LoginVerdict.Source source) {

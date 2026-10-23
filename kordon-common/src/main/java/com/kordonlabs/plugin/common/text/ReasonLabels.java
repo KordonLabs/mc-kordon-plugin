@@ -26,8 +26,8 @@ public final class ReasonLabels {
     private static final Set<String> BASE_CATEGORIES = Set.of("bot", "fraud", "cheat", "abuse");
     /** Codes with a {@code reason.<code>} label of their own. */
     private static final Set<String> KNOWN = Set.of("vpn", "proxy", "resproxy", "tor", "hosting", "suspicious", "country",
-            "blacklist", "whitelist", "check_failed", "private_ip", "mobile", "nick", "attack", "repeat_bot",
-            "maintenance", "plan_limit");
+            "blacklist", "whitelist", "check_failed", "private_ip", "mobile", "nick", "version", "attack",
+            "repeat_bot", "maintenance", "plan_limit");
     /** {@code attack:<signal>} values with a qualifier of their own. */
     private static final Set<String> ATTACK_SIGNALS = Set.of("brandsame", "brandmissing", "gibberish", "digits",
             "prefixcounter", "nearduplicate", "sameshape", "protocol");

@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Supports anti-bot proxies such as XCord that verify a player and then make them reconnect: an allowed panel verdict
- * for the same name, IP and UUID is reused without a request for up to {@link #TTL_MILLIS} until it is consumed at
+ * for the same name, IP, UUID and client protocol is reused without a request for up to {@link #TTL_MILLIS} until it is consumed at
  * PostLogin. Blocked verdicts and verdicts the panel did not make are never stored, so a reconnect loop cannot extend
  * the window. A blacklist entry added in between is still enforced by the panel's join-time check. Thread-safe.
  */
@@ -18,11 +18,12 @@ public final class RecentAllows {
     public static final long TTL_MILLIS = 60_000;
     private static final long PRUNE_EVERY_NANOS = TimeUnit.SECONDS.toNanos(10);
 
-    /** Who a verdict was made for. */
-    record Key(String nameLower, String ip, UUID uuid) {
+    /** Who a verdict was made for, and on which client version. */
+    record Key(String nameLower, String ip, UUID uuid, int protocol) {
 
         static Key of(LoginAttempt a) {
-            return new Key(a.name() == null ? null : a.name().toLowerCase(Locale.ROOT), a.ip(), a.uuid());
+            return new Key(a.name() == null ? null : a.name().toLowerCase(Locale.ROOT), a.ip(), a.uuid(),
+                    a.protocol());
         }
     }
 

@@ -102,6 +102,7 @@ public enum MessageKey {
     REASON_MOBILE("reason.mobile"),
     REASON_NICK("reason.nick"),
     REASON_NICK_KORDON("reason.nick.kordon"),
+    REASON_VERSION("reason.version"),
     REASON_ATTACK("reason.attack"),
     REASON_ATTACK_GIBBERISH("reason.attack.gibberish"),
     REASON_ATTACK_DIGITS("reason.attack.digits"),

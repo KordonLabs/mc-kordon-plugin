@@ -11,11 +11,17 @@ package com.kordonlabs.plugin.common.api.dto;
  * @param skin     online mode only; null otherwise
  * @param host     the address the player typed to join (the handshake's virtual host, e.g. {@code play.example.com});
  *                 null when the proxy does not know it
+ * @param bedrock  {@code true} for a Floodgate player, else null
  */
-public record LoginRequest(String name, String ip, String uuid, Integer protocol, Skin skin, String host) {
+public record LoginRequest(String name, String ip, String uuid, Integer protocol, Skin skin, String host,
+                           Boolean bedrock) {
+
+    public LoginRequest(String name, String ip, String uuid, Integer protocol, Skin skin, String host) {
+        this(name, ip, uuid, protocol, skin, host, null);
+    }
 
     public LoginRequest(String name, String ip, String uuid, Integer protocol, Skin skin) {
-        this(name, ip, uuid, protocol, skin, null);
+        this(name, ip, uuid, protocol, skin, null, null);
     }
 
     /** {@code texture} is a {@code http://textures.minecraft.net/texture/...} URL; {@code model} is slim or classic. */
