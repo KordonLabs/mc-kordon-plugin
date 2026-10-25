@@ -104,7 +104,8 @@ Every command requires `kordon.command` plus the permission listed below. The co
 ## Data sent to Kordon
 
 For each login: nickname, UUID, IP address, protocol version, skin (online mode), whether the player is a Bedrock
-player (Floodgate), the address the player connected to, and later the backend server, client brand and language.
+player (Floodgate), the address the player connected to, and later the backend server, client brand, language and
+ping.
 About the proxy: platform and version, plugin version, machine name, online count and response time.
 
 The plugin does not collect chat, player commands or any other client data.

@@ -95,6 +95,13 @@ public final class VelocityOnlinePlayer implements OnlinePlayer {
                 s.isClientListingAllowed(), s.isTextFilteringEnabled(), ClientSettings.token(s.getParticleStatus()));
     }
 
+    /** Keep-alive round trip in ms (-1 until known). */
+    @Override
+    public int ping() {
+        long ping = player.getPing();
+        return ping > Integer.MAX_VALUE ? -1 : (int) ping;
+    }
+
     @Override
     public boolean bedrock() {
         Boolean known = bedrock;

@@ -108,6 +108,12 @@ public final class BungeeOnlinePlayer implements OnlinePlayer {
                 null, null, null);
     }
 
+    /** Keep-alive round trip in ms (-1 until known). */
+    @Override
+    public int ping() {
+        return player.getPing();
+    }
+
     @Override
     public boolean bedrock() {
         Boolean known = bedrock;

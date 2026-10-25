@@ -18,7 +18,7 @@ public final class KordonInfo {
 
     /** Feature names this build reports in the heartbeat's {@code features} field. */
     public static final List<String> FEATURES = List.of("sessions", "kick", "lists", "lookup", "brand", "locale", "notices",
-            "noticeLocales");
+            "noticeLocales", "ping");
 
     /**
      * JVM flag {@code -Dkordon.debug=true} (placed before {@code -jar} in the proxy's start command) enables the

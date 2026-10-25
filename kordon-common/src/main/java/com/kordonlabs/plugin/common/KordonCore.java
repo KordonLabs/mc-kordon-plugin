@@ -391,6 +391,7 @@ public final class KordonCore implements Linking {
 
         SessionTracker tracker = new SessionTracker(platform, new EventQueue(EventQueue.CAPACITY), clock, worker,
                 console, this::onEnqueued);
+        tracker.startPingSampling();
         sessions = tracker;
         kicks = new KickExecutor(platform, tracker, texts, console, eventsExecutor, clock);
         heartbeat = newHeartbeat(instance);

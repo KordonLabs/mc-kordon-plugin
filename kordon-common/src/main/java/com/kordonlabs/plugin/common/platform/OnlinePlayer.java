@@ -36,6 +36,11 @@ public interface OnlinePlayer {
         return null;
     }
 
+    /** The current ping in ms; 0 or less while unknown. */
+    default int ping() {
+        return -1;
+    }
+
     /**
      * Identity of the connection: the same object as {@code LoginAttempt.connectionKey} (Bungee: the
      * PendingConnection; Velocity: the Player).

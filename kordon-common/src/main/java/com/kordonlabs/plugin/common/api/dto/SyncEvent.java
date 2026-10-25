@@ -48,12 +48,17 @@ public sealed interface SyncEvent permits SyncEvent.Join, SyncEvent.Info, SyncEv
 
     /**
      * Changed client details of an open session; null fields are unchanged. {@code locale} is BCP 47 ("ru-RU").
-     * {@code settings} is sent whole, only when it changed.
+     * {@code settings} is sent whole, only when it changed. {@code pingMs} is the player's ping in ms.
      */
-    record Info(String sid, long ago, String brand, String locale, String backend, ClientSettings settings) implements SyncEvent {
+    record Info(String sid, long ago, String brand, String locale, String backend, ClientSettings settings,
+                Integer pingMs) implements SyncEvent {
+
+        public Info(String sid, long ago, String brand, String locale, String backend, ClientSettings settings) {
+            this(sid, ago, brand, locale, backend, settings, null);
+        }
 
         public Info(String sid, long ago, String brand, String locale, String backend) {
-            this(sid, ago, brand, locale, backend, null);
+            this(sid, ago, brand, locale, backend, null, null);
         }
     }
 

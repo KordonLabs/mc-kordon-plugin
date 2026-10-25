@@ -62,6 +62,7 @@ public final class SessionTracker {
     private final Scheduler worker;
     private final ThrottledLog log;
     private final Consumer<SessionEvent.Kind> onEnqueue;
+    private volatile boolean pingSampling;
 
     // Guarded by lock.
     private final Map<Object, TrackedSession> byKey = new IdentityHashMap<>();
@@ -111,8 +112,15 @@ public final class SessionTracker {
             if (s.bedrock && s.brand == null) {
                 s.geyserCheck = worker.schedule(() -> geyserCheck(s), GEYSER_DELAY.toMillis(), TimeUnit.MILLISECONDS);
             }
+            // Bedrock: the proxy only sees the hop to Geyser.
+            if (pingSampling && !s.bedrock) schedulePing(s, PingSamples.FIRST_SAMPLE);
         }
         onEnqueue.accept(SessionEvent.Kind.JOIN);
+    }
+
+    /** New sessions report their ping from now on. */
+    public void startPingSampling() {
+        pingSampling = true;
     }
 
     /** The connection switched to another backend server: an info after the debounce. */
@@ -383,6 +391,7 @@ public final class SessionTracker {
                 for (String sid : unknown) {
                     TrackedSession s = sid == null ? null : bySid.get(sid);
                     if (s == null || queuedJoins.contains(sid)) continue;
+                    s.ping.resend();
                     queue.offer(s.joinEvent(s.joinNanos));
                     joins++;
                 }
@@ -394,6 +403,7 @@ public final class SessionTracker {
                     bySid.remove(sid);
                     s.sid = UUID.randomUUID().toString();
                     s.joinNanos = now;
+                    s.ping.resend();
                     bySid.put(s.sid, s);
                     queue.offer(s.joinEvent(now));
                     joins++;
@@ -479,6 +489,39 @@ public final class SessionTracker {
             queued = queueInfoIfChanged(s, fresh, clock.nanos());
         }
         if (queued) onEnqueue.accept(SessionEvent.Kind.INFO);
+    }
+
+    private void schedulePing(TrackedSession s, Duration delay) {
+        s.pingSample = worker.schedule(() -> samplePing(s), delay.toMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    /** On the worker: reads the ping outside the lock, queues it when it should be sent, schedules the next sample. */
+    private void samplePing(TrackedSession s) {
+        synchronized (lock) {
+            if (byKey.get(s.key) != s) return;
+            s.pingSample = null;
+        }
+        int ping = readPing(s.player);
+        boolean queued = false;
+        synchronized (lock) {
+            if (byKey.get(s.key) != s) return;
+            long now = clock.nanos();
+            int send = s.ping.offer(ping, now);
+            if (send != PingSamples.NONE) {
+                queue.offer(SessionEvent.Info.ping(s.sid, now, send));
+                queued = true;
+            }
+            schedulePing(s, PingSamples.SAMPLE_INTERVAL);
+        }
+        if (queued) onEnqueue.accept(SessionEvent.Kind.INFO);
+    }
+
+    static int readPing(OnlinePlayer p) {
+        try {
+            return p.ping();
+        } catch (RuntimeException | LinkageError e) {
+            return -1;
+        }
     }
 
     /** On the worker after a Bedrock join: reports "Geyser" when no brand is known yet. */

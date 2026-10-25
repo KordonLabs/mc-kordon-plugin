@@ -40,6 +40,8 @@ public final class TrackedSession {
     String sentLocale;
     ClientSettings sentSettings;
 
+    final PingSamples ping = new PingSamples();
+
     /** {@code Clock.nanos()} of the last Kordon kick of this connection; 0 when never kicked. */
     long kickedAtNanos;
     /** The ghost sweep found the connection missing from the proxy's list (at {@link #missingSinceNanos}). */
@@ -49,6 +51,7 @@ public final class TrackedSession {
     Scheduler.Cancellable infoFlush;
     /** The pending Geyser-brand check of a Bedrock player; null when none. */
     Scheduler.Cancellable geyserCheck;
+    Scheduler.Cancellable pingSample;
 
     TrackedSession(Object key, OnlinePlayer player, UUID uuid, String name, String ip, int protocol, boolean bedrock,
                    String sid, long joinNanos, Long loginId) {
@@ -87,7 +90,9 @@ public final class TrackedSession {
     void cancelTimers() {
         if (infoFlush != null) infoFlush.cancel();
         if (geyserCheck != null) geyserCheck.cancel();
+        if (pingSample != null) pingSample.cancel();
         infoFlush = null;
         geyserCheck = null;
+        pingSample = null;
     }
 }

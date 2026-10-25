@@ -62,10 +62,20 @@ public sealed interface SessionEvent permits SessionEvent.Join, SessionEvent.Inf
     }
 
     /** Changed client details; null fields stay unchanged on the panel. */
-    record Info(String sid, long atNanos, String brand, String locale, String backend, ClientSettings settings) implements SessionEvent {
+    record Info(String sid, long atNanos, String brand, String locale, String backend, ClientSettings settings,
+                Integer pingMs) implements SessionEvent {
+
+        public Info(String sid, long atNanos, String brand, String locale, String backend, ClientSettings settings) {
+            this(sid, atNanos, brand, locale, backend, settings, null);
+        }
 
         public Info(String sid, long atNanos, String brand, String locale, String backend) {
-            this(sid, atNanos, brand, locale, backend, null);
+            this(sid, atNanos, brand, locale, backend, null, null);
+        }
+
+        /** An info with only the ping. */
+        static Info ping(String sid, long atNanos, int pingMs) {
+            return new Info(sid, atNanos, null, null, null, null, pingMs);
         }
 
         @Override
@@ -75,12 +85,12 @@ public sealed interface SessionEvent permits SessionEvent.Join, SessionEvent.Inf
 
         @Override
         public SyncEvent toWire(long nowNanos) {
-            return new SyncEvent.Info(sid, agoMillis(atNanos, nowNanos), brand, locale, backend, settings);
+            return new SyncEvent.Info(sid, agoMillis(atNanos, nowNanos), brand, locale, backend, settings, pingMs);
         }
 
         @Override
         public int estimatedBytes() {
-            return 120 + 3 * (len(brand) + len(locale) + len(backend)) + settingsBytes(settings);
+            return 120 + 3 * (len(brand) + len(locale) + len(backend)) + settingsBytes(settings) + (pingMs == null ? 0 : 20);
         }
     }
 
