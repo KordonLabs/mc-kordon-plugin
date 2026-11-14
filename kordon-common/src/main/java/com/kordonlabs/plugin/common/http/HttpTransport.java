@@ -20,7 +20,8 @@ import java.util.concurrent.Flow;
  * a join is waiting for, and a <b>background</b> client for everything else. Plain-HTTP panels are spoken to with
  * HTTP/1.1 to avoid the h2c upgrade. Redirects are <b>never</b> followed so the token cannot travel to another host.
  * Answers are read as UTF-8 and capped at {@link #MAX_RESPONSE_BYTES}; a larger body fails the call like a network
- * error. The executors are owned by the caller.
+ * error. The executors are owned by the caller. With an {@link OutboundProxy} both clients go through it; an invalid
+ * proxy fails every request, and a 407 from the proxy fails the request after calling {@code onProxyRejected}.
  */
 public final class HttpTransport {
 
@@ -36,20 +37,30 @@ public final class HttpTransport {
     private final String userAgent;
     private final HttpClient login;
     private final HttpClient background;
+    private final OutboundProxy proxy;
+    private final Runnable onProxyRejected;
     private volatile boolean closed;
 
     public HttpTransport(String userAgent, Executor loginExecutor, Executor backgroundExecutor) {
-        this.userAgent = userAgent;
-        this.login = client(loginExecutor);
-        this.background = client(backgroundExecutor);
+        this(userAgent, loginExecutor, backgroundExecutor, OutboundProxy.NONE, () -> { });
     }
 
-    private static HttpClient client(Executor executor) {
-        return HttpClient.newBuilder()
+    public HttpTransport(String userAgent, Executor loginExecutor, Executor backgroundExecutor, OutboundProxy proxy,
+                         Runnable onProxyRejected) {
+        this.userAgent = userAgent;
+        this.proxy = proxy;
+        this.onProxyRejected = onProxyRejected;
+        this.login = client(loginExecutor, proxy);
+        this.background = client(backgroundExecutor, proxy);
+    }
+
+    private static HttpClient client(Executor executor, OutboundProxy proxy) {
+        HttpClient.Builder builder = HttpClient.newBuilder()
                 .executor(executor)
                 .connectTimeout(CONNECT_TIMEOUT)
-                .followRedirects(HttpClient.Redirect.NEVER)
-                .build();
+                .followRedirects(HttpClient.Redirect.NEVER);
+        proxy.applyTo(builder);
+        return builder.build();
     }
 
     /**
@@ -59,18 +70,40 @@ public final class HttpTransport {
     public CompletableFuture<HttpResponse<String>> post(Channel channel, URI uri, String bearerToken, String json,
                                                         Duration timeout) {
         if (closed) return CompletableFuture.failedFuture(new IOException("Kordon HTTP clients are closed"));
+        if (proxy.invalid()) return CompletableFuture.failedFuture(new IOException("invalid -Dkordon.proxy.* flags"));
         boolean tls = "https".equalsIgnoreCase(uri.getScheme());
-        HttpRequest request = HttpRequest.newBuilder(uri)
+        HttpRequest.Builder builder = HttpRequest.newBuilder(uri)
                 .version(tls ? HttpClient.Version.HTTP_2 : HttpClient.Version.HTTP_1_1)
                 .timeout(timeout)
                 .header("Authorization", "Bearer " + bearerToken)
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
                 .header("User-Agent", userAgent)
-                .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
-                .build();
+                .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8));
+        String proxyLogin = proxy.authorization();
+        if (proxyLogin != null) builder.header("Proxy-Authorization", proxyLogin); // sent to the proxy only
+        HttpRequest request = builder.build();
         HttpClient client = channel == Channel.LOGIN ? login : background;
-        return client.sendAsync(request, info -> new LimitedString(MAX_RESPONSE_BYTES));
+        CompletableFuture<HttpResponse<String>> sent = client.sendAsync(request,
+                info -> new LimitedString(MAX_RESPONSE_BYTES));
+        if (!proxy.configured()) return sent;
+        CompletableFuture<HttpResponse<String>> out = sent.thenCompose(response -> {
+            if (response.statusCode() != 407) return CompletableFuture.completedFuture(response);
+            proxyRejected();
+            return CompletableFuture.failedFuture(new IOException("the HTTP proxy refused the request (407)"));
+        });
+        out.whenComplete((response, error) -> {
+            if (out.isCancelled()) sent.cancel(true);
+        });
+        return out;
+    }
+
+    private void proxyRejected() {
+        try {
+            onProxyRejected.run();
+        } catch (RuntimeException ignored) {
+            // a console line must never break a request
+        }
     }
 
     /** Shuts both clients down and waits at most {@link #CLOSE_AWAIT} for both. In-flight requests fail. Idempotent. */

@@ -10,6 +10,7 @@ import com.kordonlabs.plugin.common.heartbeat.ConnectionWatch;
 import com.kordonlabs.plugin.common.heartbeat.HeartbeatTask;
 import com.kordonlabs.plugin.common.http.HttpKordonApi;
 import com.kordonlabs.plugin.common.http.HttpTransport;
+import com.kordonlabs.plugin.common.http.OutboundProxy;
 import com.kordonlabs.plugin.common.http.PingMeter;
 import com.kordonlabs.plugin.common.install.ApiBase;
 import com.kordonlabs.plugin.common.install.Credentials;
@@ -374,9 +375,15 @@ public final class KordonCore implements Linking {
         watch = connectionWatch;
         identity = new ProxyIdentity(dataFolder, () -> MachineName.resolve(console::debug));
 
-        // A dedicated HTTP client for /login, another for all background traffic.
+        // A dedicated HTTP client for /login, another for all background traffic; through -Dkordon.proxy.* when set.
+        OutboundProxy proxy = OutboundProxy.fromSystemProperties();
+        String blockedBy = proxy.loginBlockedBy(base.url(), OutboundProxy::netProperty);
+        logProxy(proxy, blockedBy, texts, console);
+        String proxyRejected = blockedBy != null
+                ? texts.console(MessageKey.LOG_PROXY_BASIC_TUNNEL, "proxy", proxy.address(), "flag", blockedBy)
+                : texts.console(MessageKey.LOG_PROXY_REJECTED, "proxy", proxy.address());
         HttpTransport http = new HttpTransport(KordonInfo.userAgent(platform.platformId()), loginHttpExecutor,
-                httpExecutor);
+                httpExecutor, proxy, () -> console.warn("proxy.rejected", proxyRejected));
         transport = http;
         PingMeter pingMeter = new PingMeter(clock);
         ping = pingMeter;
@@ -458,6 +465,32 @@ public final class KordonCore implements Linking {
 
     private static boolean debugFlag() {
         return KordonInfo.debugRequested(systemProperty(KordonInfo.DEBUG_PROPERTY));
+    }
+
+    /** One console line about {@code -Dkordon.proxy.*} at start; never the login. */
+    private static void logProxy(OutboundProxy proxy, String blockedBy, Messages texts, ThrottledLog console) {
+        if (!proxy.configured()) return;
+        String address = proxy.address();
+        if (proxy.hostMissing()) {
+            console.warn(texts.console(MessageKey.LOG_PROXY_NO_HOST));
+            return;
+        }
+        if (proxy.badHost()) {
+            console.warn(texts.console(MessageKey.LOG_PROXY_BAD_HOST));
+            return;
+        }
+        if (proxy.invalid()) {
+            console.warn(texts.console(MessageKey.LOG_PROXY_INVALID, "proxy", address));
+            return;
+        }
+        MessageKey inUse = proxy.hasCredentials() ? MessageKey.LOG_PROXY_IN_USE_LOGIN : MessageKey.LOG_PROXY_IN_USE;
+        console.info(texts.console(inUse, "proxy", address));
+        if (proxy.partialCredentials()) {
+            console.warn(texts.console(MessageKey.LOG_PROXY_PARTIAL_LOGIN, "proxy", address));
+        }
+        if (blockedBy != null) {
+            console.warn(texts.console(MessageKey.LOG_PROXY_BASIC_TUNNEL, "proxy", address, "flag", blockedBy));
+        }
     }
 
     private static String systemProperty(String name) {
