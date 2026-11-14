@@ -65,6 +65,20 @@ online within a minute.
 
 To update, stop the proxy, replace `Kordon.jar` and start it again. The key stays in `plugins/Kordon/secret.key`.
 
+## Outbound HTTP proxy
+
+If the proxy machine must reach Kordon through an HTTP proxy, pass these JVM flags to the proxy server:
+
+```
+-Dkordon.proxy.host=proxy.example.com -Dkordon.proxy.port=3128
+-Dkordon.proxy.username=user -Dkordon.proxy.password=secret
+-Djdk.http.auth.tunneling.disabledSchemes=
+```
+
+Only Kordon's requests use this proxy; other plugins are not affected. The proxy must support `CONNECT`.
+Username and password are optional. With Basic authentication the last flag is required: by default Java does
+not send proxy credentials when tunnelling HTTPS.
+
 ## Commands
 
 Every command requires `kordon.command` plus the permission listed below. The console has all permissions.

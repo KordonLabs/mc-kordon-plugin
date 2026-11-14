@@ -2,6 +2,10 @@ package com.kordonlabs.plugin.common.http;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.Authenticator;
+import java.net.InetSocketAddress;
+import java.net.PasswordAuthentication;
+import java.net.ProxySelector;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -45,11 +49,34 @@ public final class HttpTransport {
     }
 
     private static HttpClient client(Executor executor) {
-        return HttpClient.newBuilder()
+        HttpClient.Builder builder = HttpClient.newBuilder()
                 .executor(executor)
                 .connectTimeout(CONNECT_TIMEOUT)
-                .followRedirects(HttpClient.Redirect.NEVER)
-                .build();
+                .followRedirects(HttpClient.Redirect.NEVER);
+        String proxyHost = System.getProperty("kordon.proxy.host");
+        if (proxyHost != null && !proxyHost.isBlank()) {
+            int proxyPort = Integer.getInteger("kordon.proxy.port", 3128);
+            builder.proxy(ProxySelector.of(new InetSocketAddress(proxyHost, proxyPort)));
+            String user = System.getProperty("kordon.proxy.username");
+            String password = System.getProperty("kordon.proxy.password");
+            if (user != null && password != null) builder.authenticator(new ProxyAuthenticator(user, password));
+        }
+        return builder.build();
+    }
+
+    private static final class ProxyAuthenticator extends Authenticator {
+        private final String user;
+        private final char[] password;
+
+        ProxyAuthenticator(String user, String password) {
+            this.user = user;
+            this.password = password.toCharArray();
+        }
+
+        @Override
+        protected PasswordAuthentication getPasswordAuthentication() {
+            return getRequestorType() == RequestorType.PROXY ? new PasswordAuthentication(user, password) : null;
+        }
     }
 
     /**
